@@ -155,4 +155,91 @@ app.post('/api/login', (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
+// Get user balance endpoint
+app.get('/api/getBalance', (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) {
+      return res.status(400).json({ success: false, message: 'Username is required' });
+    }
+    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, balance: user.balance || 0 });
+  } catch (error) {
+    console.error('Error getting balance:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Deposit endpoint
+app.post('/api/deposit', (req, res) => {
+  try {
+    const { username, amount, method } = req.body;
+    let users = readUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Deposit amount must be positive' });
+    }
+    
+    // Update user balance
+    user.balance += amount;
+    writeUsers(users);
+    res.json({ success: true, balance: user.balance });
+  } catch (error) {
+    console.error('Error processing deposit:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Withdrawal endpoint
+app.post('/api/withdraw', (req, res) => {
+  try {
+    const { username, amount, method } = req.body;
+    let users = readUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Withdrawal amount must be positive' });
+    }
+    if (user.balance < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient balance' });
+    }
+    
+    // Update user balance
+    user.balance -= amount;
+    writeUsers(users);
+    res.json({ success: true, balance: user.balance });
+  } catch (error) {
+    console.error('Error processing withdrawal:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Transaction history endpoint
+app.get('/api/transactions', (req, res) => {
+  try {
+    const { username } = req.query;
+    let users = readUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // For simplicity, assuming transactions are just balance updates
+    const transactions = user.transactions || [];
+    res.json({ success: true, transactions });
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

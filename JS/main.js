@@ -2,6 +2,7 @@ import { openForm, closeForm, submitForm } from './auth/form-handlers.js';
 import { updateAccountMenu, setupAccountDropdown } from './ui/account-menu.js';
 import { updatePasswordStrength, checkPasswordMatch } from './auth/password-strength.js';
 import { initRouletteGame } from './games/roulette.js';
+import './ui/balance-display.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize account menu

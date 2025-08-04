@@ -85,6 +85,12 @@ export async function validateLogin(loginInput, password) {
     }));
     
     currentUser = JSON.parse(sessionStorage.getItem('current_user'));
+
+    // Dispatch userLoggedIn event
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+      detail: { user: currentUser } 
+    }));
+    
     return data;
     
   } catch (error) {
@@ -107,6 +113,9 @@ export async function validateLogin(loginInput, password) {
 export function logout() {
   sessionStorage.removeItem('current_user');
   currentUser = null;
+
+  // Dispatch userLoggedOut event
+  window.dispatchEvent(new CustomEvent('userLoggedOut'));
 }
 
 export function getCurrentUser() {
