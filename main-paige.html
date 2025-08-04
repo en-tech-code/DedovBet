@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DEDOVBET - Casino Fun</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial Black', sans-serif;
+      background-color: #121212;
+      color: #e0c78c;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .banner {
+        background: url('Banner.png') center center no-repeat;
+        background-size: contain;
+        background-color: #000;
+        height: 10vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 100;
+        border-bottom: 2px solid gold;
+        box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.6); /* gold glow */
+      }
+
+    .container {
+      display: flex;
+      height: 84vh;
+      margin-top: 8vh;
+    }
+
+    .left-column,
+    .middle-column,
+    .right-column {
+      padding: 15px;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .left-column, .right-column {
+      background: #1e1e1e;
+      width: 8%;
+      border-right: 1px solid #444;
+    }
+
+    .middle-column {
+      background: #2a2a2a;
+      width: 84%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h2 {
+      color: gold;
+      margin-bottom: 10px;
+    }
+
+    .content-block {
+      background: #333;
+      color: #e0c78c;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #555;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .content-block:hover {
+      background: gold;
+      color: black;
+      cursor: pointer;
+    }
+
+    /* Game grid */
+    .game-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .game-card {
+      background: #111;
+      border: 2px solid gold;
+      border-radius: 10px;
+      width: 180px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+    }
+
+    .game-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .game-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px gold;
+    }
+
+    .game-card p {
+      text-align: center;
+      padding: 8px;
+      font-size: 0.9em;
+      color: #e0c78c;
+    }
+
+    .footer {
+      background: #0d0d0d;
+      color: #999;
+      text-align: center;
+      padding: 10px;
+      font-size: 0.85em;
+      border-top: 1px solid #444;
+      height: 8vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .footer a {
+      color: #ccc;
+      text-decoration: underline;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Banner -->
+  <div class="banner"></div>
+
+  <!-- Main Layout -->
+  <div class="container">
+    <!-- Left Sidebar -->
+    <div class="left-column">
+      <h2>Menu</h2>
+      <div class="content-block">Home</div>
+      <div class="content-block">Slots</div>
+      <div class="content-block">Table Games</div>
+    </div>
+
+    <!-- Middle Content -->
+    <div class="middle-column">
+      <h2>Fake Games Gallery</h2>
+      <div class="game-grid">
+        <div class="game-card" onclick="alert('This is just a fake game!')">
+          <img src="https://via.placeholder.com/180x120?text=Slot+1" alt="Slot 1"/>
+          <p>DEDOV Slots</p>
+        </div>
+        <div class="game-card" onclick="alert('This is just a fake game!')">
+          <img src="https://via.placeholder.com/180x120?text=Blackjack" alt="Blackjack"/>
+          <p>Fake Blackjack</p>
+        </div>
+        <div class="game-card" onclick="alert('This is just a fake game!')">
+          <img src="https://via.placeholder.com/180x120?text=Roulette" alt="Roulette"/>
+          <p>Lucky Roulette</p>
+        </div>
+        <div class="game-card" onclick="alert('This is just a fake game!')">
+          <img src="https://via.placeholder.com/180x120?text=Soccer+Bet" alt="Sports"/>
+          <p>Virtual Sports</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="right-column">
+      <h2>Promos</h2>
+      <div class="content-block">9999 Free Coins</div>
+      <div class="content-block">Fake VIP Access</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>
+      <a href="#">Terms & Conditions</a> | 
+      <a href="#">Contact Us</a> | 
+      Licensed by Gorno Kraishte
+    </div>
+    <div>
+      ⚠️ This is a fun, parody website for personal use. No real money or gambling occurs here. Not affiliated with any real casino.
+    </div>
+  </div>
+</body>
+</html>

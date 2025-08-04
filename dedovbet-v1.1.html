@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEDOVBET - Fun Casino Layout</title>
+  <link rel="stylesheet" href="dedovstyle.css">
+</head>
+<body>
+  <div class="topbar">
+    <img src="dedovbet-logo.png" alt="DEDOVBET Logo">
+    <div id="auth-buttons">
+      <button id="registerBtn">REGISTER</button>
+      <button id="loginBtn">LOG IN</button>
+    </div>
+    <div id="account-menu" style="display:none;">
+      <button>MY ACCOUNT ▼</button>
+      <div id="account-dropdown" class="dropdown-content">
+        <div>Welcome, <span id="account-username"></span></div>
+        <div>Balance: $<span id="account-balance"></span></div>
+        <button id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <h3 style="color: red;">CATEGORIES</h3>
+      <div class="menu-item"><a href="#live-sports">Live Sports</a></div>
+      <div class="menu-item"><a href="#football">Football</a></div>
+      <div class="menu-item"><a href="#basketball">Basketball</a></div>
+      <div class="menu-item"><a href="#slots">Casino Slots</a></div>
+      <div class="menu-item"><a href="#live-casino">Live Casino</a></div>
+      <div class="menu-item"><a href="#virtual">Virtual Games</a></div>
+      <div class="menu-item"><a href="#live-games">Live Games</a></div>
+    </div>
+
+    <div class="content">
+      <div class="bonus-banner"></div>
+      <h2 style="color: gold; margin-bottom: 10px;">Featured Games</h2>
+      <div class="game-gallery">
+        <div class="game-card">
+          <a href="#horse-faking">
+            <img src="https://via.placeholder.com/180x120?text=Horse+Faking" alt="Horse Faking">
+            <p>Horse Faking</p>
+          </a>
+        </div>
+        <div class="game-card">
+          <a href="#nogatopka">
+            <img src="https://via.placeholder.com/180x120?text=Nogatopka" alt="Nogatopka">
+            <p>Nogatopka</p>
+          </a>
+        </div>
+        <div class="game-card">
+          <a href="#sushi">
+            <img src="https://via.placeholder.com/180x120?text=Happy+Hour+Sushi" alt="Happy Hour Sushi">
+            <p>Happy Hour Sushi</p>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="bet-slip">
+      <h3 style="color: red;">Bet Slip</h3>
+      <div class="bet-item">Levski @ 3.05</div>
+      <div class="bet-item">CSKA @ 2.15</div>
+      <div class="bet-item">Ludengrats @ 1.65</div>
+      <div class="menu-item" style="text-align:center; background: gold; color: black;"><a href="#place-bet">PLACE BET</a></div>
+    </div>
+  </div>
+
+  <!-- Register Form -->
+  <div id="registerForm" class="form-popup">
+    <h3 style="color: gold;">Register</h3>
+    <input type="text" id="regUsername" placeholder="Username" required>
+    <input type="text" id="regEmail" placeholder="Email" required>
+    <div class="password-strength-container">
+      <label for="regPassword">Password 
+        <span class="tooltip">?
+          <span class="tooltiptext">Requires: 8+ chars, 1 uppercase, 1 number, 1 symbol</span>
+        </span>
+      </label>
+      <input type="password" id="regPassword" placeholder="Password" required>
+      <div class="strength-meter">
+        <div class="strength-meter-fill" id="strength-meter-fill"></div>
+      </div>
+      <ul class="strength-criteria" id="strength-criteria">
+        <li data-rule="length">At least 8 characters</li>
+        <li data-rule="uppercase">1 uppercase letter (A-Z)</li>
+        <li data-rule="number">1 number (0-9)</li>
+        <li data-rule="symbol">1 symbol (!@#$%^&*)</li>
+      </ul>
+    </div>
+    <input type="password" id="regConfirmPassword" placeholder="Confirm Password" required>
+    <small id="password-match-text"></small>
+    <button id="registerSubmit">Submit</button>
+    <button id="registerCancel">Cancel</button>
+    <div class="error-message" id="registerError"></div>
+  </div>
+
+  <!-- Login Form -->
+  <div id="loginForm" class="form-popup">
+    <h3 style="color: gold;">Login</h3>
+    <input type="text" id="loginEmail" placeholder="Email" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button id="loginSubmit">Login</button>
+    <button id="loginCancel">Cancel</button>
+    <div class="error-message" id="loginError"></div>
+  </div>
+
+  <footer>
+    <!-- Footer content remains the same -->
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

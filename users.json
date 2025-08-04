@@ -1,0 +1,13 @@
+[
+  {
+    "username": "testov_01",
+    "email": "test@gmail.com",
+    "password": "Test123!",
+    "balance": 1000,
+    "joinedDate": "2025-08-04T00:00:51.281Z",
+    "name": "Test",
+    "surname": "Testov",
+    "dateOfBirth": "2025-02-31",
+    "nationality": "Serbian"
+  }
+]
