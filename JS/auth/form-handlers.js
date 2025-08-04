@@ -3,7 +3,28 @@ import { validatePassword } from './password-strength.js';
 import { updateAccountMenu } from '../ui/account-menu.js';
 
 export function openForm(formId) {
-  document.getElementById(formId).style.display = 'block';
+  const form = document.getElementById(formId);
+  if (form) {
+    form.style.display = 'block';
+    
+    // Clear any previous validation states
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach(input => {
+      input.classList.remove('input-error', 'input-valid');
+    });
+    
+    // Clear error messages
+    const errorDiv = form.querySelector('.error-message');
+    if (errorDiv) {
+      errorDiv.textContent = '';
+    }
+    
+    // Focus on the first input
+    const firstInput = form.querySelector('input');
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 100);
+    }
+  }
 }
 
 export function closeForm(formId) {
@@ -101,26 +122,81 @@ export async function submitForm(formId) {
     const loginInput = form.querySelector('#login-input').value.trim();
     const password = form.querySelector('#login-password').value;
 
-if (!loginInput || !password) {
-      errorDiv.textContent = 'Please enter both username/email and password';
+    // Enhanced validation with specific error messages
+    if (!loginInput) {
+      errorDiv.textContent = 'Please enter your username or email';
       errorDiv.style.color = 'red';
       return;
     }
 
-    const result = await apiValidateLogin(loginInput, password);
-
-    if (result.success) {
-      const welcomeName = result.user.name ? result.user.name : result.user.username;
-      errorDiv.textContent = `Welcome back, ${welcomeName}!`;
-      errorDiv.style.color = '#4CAF50';
-      setTimeout(() => {
-        closeForm(formId);
-        updateAccountMenu();
-        window.location.reload();
-      }, 1500);
-    } else {
-      errorDiv.textContent = result.message;
+    if (!password) {
+      errorDiv.textContent = 'Please enter your password';
       errorDiv.style.color = 'red';
+      return;
+    }
+
+    // Basic email/username format validation
+    if (loginInput.length < 3) {
+      errorDiv.textContent = 'Username must be at least 3 characters long';
+      errorDiv.style.color = 'red';
+      return;
+    }
+
+    // If it looks like an email, validate email format
+    if (loginInput.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(loginInput)) {
+        errorDiv.textContent = 'Please enter a valid email address';
+        errorDiv.style.color = 'red';
+        return;
+      }
+    }
+
+    if (password.length < 6) {
+      errorDiv.textContent = 'Password must be at least 6 characters long';
+      errorDiv.style.color = 'red';
+      return;
+    }
+
+    try {
+      const result = await apiValidateLogin(loginInput, password);
+
+      if (result.success) {
+        const welcomeName = result.user.name ? result.user.name : result.user.username;
+        errorDiv.textContent = `Welcome back, ${welcomeName}!`;
+        errorDiv.style.color = '#4CAF50';
+        setTimeout(() => {
+          closeForm(formId);
+          updateAccountMenu();
+          window.location.reload();
+        }, 1500);
+      } else {
+        errorDiv.textContent = result.message;
+        errorDiv.style.color = 'red';
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Enhanced error handling with helpful suggestions
+      if (error.message.includes('not found')) {
+        errorDiv.textContent = 'Username or email not found. Please check your credentials or register a new account.';
+      } else if (error.message.includes('password')) {
+        errorDiv.textContent = 'Incorrect password. Please try again or reset your password.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorDiv.textContent = 'Connection error. Please check your internet connection and try again.';
+      } else if (error.message.includes('Server error')) {
+        errorDiv.textContent = 'Server is temporarily unavailable. Please try again in a few minutes.';
+      } else {
+        errorDiv.textContent = 'Login failed. Please verify your credentials and try again.';
+      }
+      errorDiv.style.color = 'red';
+      
+      // Add visual feedback to inputs based on error type
+      if (error.message.includes('not found')) {
+        form.querySelector('#login-input')?.classList.add('input-error');
+      } else if (error.message.includes('password')) {
+        form.querySelector('#login-password')?.classList.add('input-error');
+      }
     }
   }
 }

@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   document.getElementById('confirm-password')?.addEventListener('input', checkPasswordMatch);
 
+  // Login form real-time validation
+  setupLoginValidation();
+
   // Password visibility toggles
   setupPasswordToggles();
   
@@ -195,5 +198,85 @@ function setupEnterKeySubmission() {
         }
       });
     });
+  }
+}
+
+// Function to setup real-time login form validation
+function setupLoginValidation() {
+  const loginInput = document.getElementById('login-input');
+  const loginPassword = document.getElementById('login-password');
+  
+  if (loginInput) {
+    loginInput.addEventListener('input', (e) => {
+      validateLoginInput(e.target);
+    });
+    
+    loginInput.addEventListener('blur', (e) => {
+      validateLoginInput(e.target);
+    });
+  }
+  
+  if (loginPassword) {
+    loginPassword.addEventListener('input', (e) => {
+      validateLoginPassword(e.target);
+    });
+    
+    loginPassword.addEventListener('blur', (e) => {
+      validateLoginPassword(e.target);
+    });
+  }
+}
+
+// Validate login input (username/email)
+function validateLoginInput(inputElement) {
+  const value = inputElement.value.trim();
+  
+  // Remove previous validation classes
+  inputElement.classList.remove('input-error', 'input-valid');
+  
+  if (value.length === 0) {
+    // No validation styling for empty input (neutral state)
+    return;
+  }
+  
+  if (value.length < 3) {
+    inputElement.classList.add('input-error');
+    return;
+  }
+  
+  // If it contains @, validate as email
+  if (value.includes('@')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(value)) {
+      inputElement.classList.add('input-valid');
+    } else {
+      inputElement.classList.add('input-error');
+    }
+  } else {
+    // Username validation
+    if (value.length >= 3) {
+      inputElement.classList.add('input-valid');
+    } else {
+      inputElement.classList.add('input-error');
+    }
+  }
+}
+
+// Validate login password
+function validateLoginPassword(inputElement) {
+  const value = inputElement.value;
+  
+  // Remove previous validation classes
+  inputElement.classList.remove('input-error', 'input-valid');
+  
+  if (value.length === 0) {
+    // No validation styling for empty input (neutral state)
+    return;
+  }
+  
+  if (value.length < 6) {
+    inputElement.classList.add('input-error');
+  } else {
+    inputElement.classList.add('input-valid');
   }
 }

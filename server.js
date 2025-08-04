@@ -87,12 +87,56 @@ app.post('/api/register', (req, res) => {
 // Login endpoint
 app.post('/api/login', (req, res) => {
   const { loginInput, password } = req.body;
+  
+  // Basic input validation
+  if (!loginInput) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username or email is required' 
+    });
+  }
+  
+  if (!password) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Password is required' 
+    });
+  }
+  
+  // Trim inputs to prevent whitespace issues
+  const trimmedInput = loginInput.trim();
+  
+  if (trimmedInput.length < 3) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username must be at least 3 characters long' 
+    });
+  }
+  
   let users = readUsers();
-  let user = users.find(u =>
-    (u.email === loginInput || u.username === loginInput)
-  );
-  if (!user) return res.status(400).json({ success: false, message: 'Email or username not found' });
-  if (user.password !== password) return res.status(400).json({ success: false, message: 'Incorrect password' });
+  
+  // Find user by email or username (case-insensitive search)
+  let user = users.find(u => {
+    if (!u.email || !u.username) return false;
+    return (
+      u.email.toLowerCase() === trimmedInput.toLowerCase() || 
+      u.username.toLowerCase() === trimmedInput.toLowerCase()
+    );
+  });
+  
+  if (!user) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Email or username not found' 
+    });
+  }
+  
+  if (user.password !== password) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Incorrect password' 
+    });
+  }
 
   // Ensure all fields are present
   const safeUser = {
@@ -107,6 +151,7 @@ app.post('/api/login', (req, res) => {
     joinedDate: user.joinedDate || ""
   };
 
+  console.log('User logged in successfully:', user.username);
   res.json({ success: true, user: safeUser });
 });
 

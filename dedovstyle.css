@@ -202,6 +202,24 @@ footer {
   background: #333;
   border: 1px solid #666;
   color: #fff;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Input validation states */
+.form-popup input.input-error {
+  border-color: #ff4444;
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.3);
+}
+
+.form-popup input.input-valid {
+  border-color: #4CAF50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.form-popup input:focus {
+  outline: none;
+  border-color: gold;
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
 }
 
 .form-popup button {

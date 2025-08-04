@@ -57,9 +57,19 @@ export async function validateLogin(loginInput, password) {
       body: JSON.stringify({ loginInput, password })
     });
 
-    if (!res.ok) throw new Error('Login failed');
-
-    const data = await res.json();
+    // Parse the response even if it's an error
+    let data;
+    try {
+      data = await res.json();
+    } catch (parseError) {
+      console.error('Error parsing login response:', parseError);
+      throw new Error('Server error - invalid response format');
+    }
+    
+    // If the login was not successful, throw an error with the message from the server
+    if (!data.success) {
+      throw new Error(data.message || 'Login failed');
+    }
     
     // Store with your required structure
     sessionStorage.setItem('current_user', JSON.stringify({
@@ -79,7 +89,17 @@ export async function validateLogin(loginInput, password) {
     
   } catch (error) {
     console.error('Login error:', error);
-    throw error;
+    
+    // Enhance error messages for better user experience
+    if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+      throw new Error('Network error - please check your internet connection');
+    } else if (error.message.includes('not found')) {
+      throw new Error('Username or email not found');
+    } else if (error.message.includes('password')) {
+      throw new Error('Incorrect password');
+    } else {
+      throw error;
+    }
   }
 }
 
