@@ -1,4 +1,5 @@
 This is a Test Casino Project - Not fully functional
+
 Currently working :
  - Register user and send information throught server.js to users.json
  - Read registered users while logging in and matching the credentials
