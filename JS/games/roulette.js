@@ -1,4 +1,5 @@
 import { getCurrentUser } from '../auth/user-accounts.js';
+import { getBalanceHandler } from '../balance-handler.js';
 
 // Roulette game configuration - European Roulette Layout
 const ROULETTE_NUMBERS = [
@@ -42,9 +43,13 @@ export class RouletteGame {
     // Game state
     this.currentBet = {};
     this.selectedChip = 1;  // Default chip amount
-    this.balance = 1000;
+    this.balance = 0;
+    this.pendingBets = [];  // Track all bets for final settlement
+    this.virtualBalance = 0; // Virtual balance during gameplay
     this.spinning = false;
     this.history = [];
+    this.lastGameResult = null; // Initialize lastGameResult
+    this.balanceHandler = getBalanceHandler();
     
     // DOM elements
     this.wheel = document.getElementById('roulette-wheel');
@@ -63,22 +68,65 @@ export class RouletteGame {
   }
   
   init() {
-    // Get user balance if logged in
-    const user = getCurrentUser();
-    if (user && user.balance) {
-      this.balance = user.balance;
+    // Get user balance from the balance handler with server refresh
+    this.fetchCurrentBalance().then(() => {
       this.updateBalanceDisplay();
-    }
+      console.log('Initial balance loaded from server:', this.balance);
+    });
     
     // Create wheel numbers
     this.createWheelNumbers();
+    
+    // Add pulse animation style
+    this.addPulseAnimation();
     
     // Event listeners
     this.spinButton.addEventListener('click', () => this.spin());
     this.clearButton.addEventListener('click', () => this.clearBet());
     
-    // Make sure to clean up balls after page unload/reload
-    window.addEventListener('beforeunload', () => this.cleanupExistingBalls());
+    // Listen for balance update events - when other components update the balance
+    window.addEventListener('balanceUpdated', (e) => {
+      console.log('Roulette received balance update:', e.detail);
+      // Update the local balance
+      this.balance = e.detail.balance;
+      // Only update virtual balance if we're not in the middle of betting
+      if (this.pendingBets.length === 0 && !this.spinning) {
+        this.virtualBalance = this.balance;
+        this.updateBalanceDisplay();
+      }
+    });
+    
+    // Make sure to clean up balls and commit changes before page unload/reload
+    window.addEventListener('beforeunload', (e) => {
+      // This needs to be synchronous for beforeunload
+      console.log('Page unloading, committing balance changes');
+      
+      // Force direct update to balance handler if there's a difference
+      if (this.virtualBalance !== this.balance) {
+        const difference = this.virtualBalance - this.balance;
+        
+        // If we gained money, process a win, otherwise process a loss
+        if (difference > 0) {
+          this.balanceHandler.processGameResult({
+            isWin: true,
+            winAmount: difference,
+            gameType: 'roulette',
+            details: { gameType: 'roulette', beforeUnload: true }
+          });
+        } else if (difference < 0) {
+          // For losses, we need to handle it appropriately
+          this.balanceHandler.processGameResult({
+            isWin: false,
+            winAmount: 0,
+            betAmount: Math.abs(difference),
+            gameType: 'roulette',
+            details: { gameType: 'roulette', beforeUnload: true }
+          });
+        }
+      }
+      
+      this.cleanupExistingBalls();
+    });
     
     this.betNumbers.forEach(number => {
       number.addEventListener('click', () => this.placeBet(number));
@@ -142,8 +190,11 @@ export class RouletteGame {
     const number = numberElement.dataset.number;
     const amount = this.selectedChip;
     
-    // Ensure we have enough balance
-    if (amount > this.balance) {
+    console.log('Placing bet on number:', number, 'amount:', amount);
+    console.log('Current virtual balance:', this.virtualBalance);
+    
+    // Ensure we have enough virtual balance
+    if (amount > this.virtualBalance) {
       this.resultDisplay.textContent = 'Insufficient balance!';
       this.resultDisplay.style.color = '#ff6b6b';
       return;
@@ -157,9 +208,27 @@ export class RouletteGame {
     // Add the bet amount
     this.currentBet[number] += amount;
     
-    // Deduct from balance
-    this.balance -= amount;
+    // Deduct from virtual balance only
+    this.virtualBalance -= amount;
+    console.log('New virtual balance after bet:', this.virtualBalance);
+    
+    // Save bet information for later processing
+    this.pendingBets.push({
+      type: 'number',
+      betType: 'number',
+      number: number,
+      amount: amount
+    });
+    
+    // Update the virtual balance display
     this.updateBalanceDisplay();
+    
+    // Show prompt to spin the wheel
+    this.resultDisplay.textContent = 'Bet placed! Press SPIN to play.';
+    this.resultDisplay.style.color = '#e0c78c';
+    
+    // Highlight the spin button
+    this.spinButton.style.animation = 'pulse 1.5s infinite';
     
     // Update the display
     numberElement.classList.add('active-bet');
@@ -182,16 +251,25 @@ export class RouletteGame {
   clearBet() {
     if (this.spinning) return;
     
-    // Refund all bets
-    let refund = 0;
+    // Calculate total bet amount
+    let totalBet = 0;
     for (const betType in this.currentBet) {
-      refund += this.currentBet[betType];
+      totalBet += this.currentBet[betType];
     }
     
-    this.balance += refund;
-    this.updateBalanceDisplay();
+    // Reset virtual balance to initial value
+    if (totalBet > 0) {
+      this.virtualBalance = this.balance;
+      this.updateBalanceDisplay();
+      
+      // Clear pending bets
+      this.pendingBets = [];
+      
+      // Reset the spin button animation
+      this.spinButton.style.animation = 'none';
+    }
     
-    // Clear all bets
+    // Clear current bets
     this.currentBet = {};
     
     // Reset the display of bet numbers
@@ -208,11 +286,134 @@ export class RouletteGame {
     });
     
     this.resultDisplay.textContent = '';
+    
+    // Reset spin button animation
+    this.spinButton.style.animation = 'none';
+  }
+  
+  // Add the pulse animation style to the document if it doesn't exist
+  addPulseAnimation() {
+    if (!document.getElementById('roulette-animations')) {
+      const style = document.createElement('style');
+      style.id = 'roulette-animations';
+      style.textContent = `
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7);
+            transform: scale(1);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(255, 204, 0, 0);
+            transform: scale(1.05);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(255, 204, 0, 0);
+            transform: scale(1);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+  
+  // Fetch current balance from server
+  async fetchCurrentBalance() {
+    try {
+      // First refresh the balance handler
+      this.balance = this.balanceHandler.getBalance();
+      
+      // Then fetch from server to be absolutely sure
+      if (this.balanceHandler.username) {
+        const response = await fetch(`http://localhost:3000/api/getBalance?username=${this.balanceHandler.username}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log('Fetched balance from server:', data.balance);
+          this.balance = data.balance;
+          this.virtualBalance = this.balance;
+          
+          // Update balance handler and session storage
+          this.balanceHandler.balance = this.balance;
+          const user = getCurrentUser();
+          if (user) {
+            user.balance = this.balance;
+            sessionStorage.setItem('current_user', JSON.stringify(user));
+          }
+        }
+      } else {
+        this.virtualBalance = this.balance;
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+      // Fallback to balance handler value
+      this.virtualBalance = this.balance;
+    }
   }
   
   updateBalanceDisplay() {
+    // Use virtual balance for display during gameplay
     if (this.balanceDisplay) {
-      this.balanceDisplay.textContent = this.balance.toFixed(2);
+      this.balanceDisplay.textContent = this.virtualBalance.toFixed(2);
+    }
+  }
+  
+  // Commit the virtual balance to the real balance when game ends
+  commitBalanceChanges() {
+    // Add debugging to see if this method is being called
+    console.log('commitBalanceChanges called');
+    console.log('virtualBalance:', this.virtualBalance);
+    console.log('balance:', this.balance);
+    console.log('lastGameResult:', this.lastGameResult);
+    
+    // Force update regardless of lastGameResult - calculate net change
+    const balanceDifference = this.virtualBalance - this.balance;
+    
+    if (balanceDifference !== 0) {
+      console.log('Balance difference detected:', balanceDifference);
+      
+      // Create a game result object if none exists
+      if (!this.lastGameResult) {
+        console.log('Creating new game result for balance difference');
+        this.lastGameResult = {
+          isWin: balanceDifference > 0,
+          winAmount: Math.abs(balanceDifference),
+          gameType: 'roulette',
+          details: {
+            gameType: 'roulette',
+            forcedUpdate: true,
+            balanceDifference: balanceDifference
+          }
+        };
+      }
+      
+      // Process the game result with the balance handler
+      console.log('Sending game result to balance handler:', this.lastGameResult);
+      this.balanceHandler.processGameResult(this.lastGameResult)
+        .then(result => {
+          if (result.success) {
+            console.log('Balance committed successfully, new balance:', result.balance);
+            // Update our local balance to match
+            this.balance = result.balance || this.balanceHandler.getBalance();
+            this.virtualBalance = this.balance;
+            this.updateBalanceDisplay();
+            
+            // Dispatch balance updated event to notify other components
+            const event = new CustomEvent('balanceUpdated', {
+              detail: { balance: this.balance }
+            });
+            window.dispatchEvent(event);
+          } else {
+            console.error('Failed to commit balance changes:', result.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error in commitBalanceChanges:', error);
+        });
+      
+      // Reset the last game result
+      this.lastGameResult = null;
+    } else {
+      console.log('No balance difference to commit');
     }
   }
   
@@ -238,6 +439,9 @@ export class RouletteGame {
     this.spinning = true;
     this.spinButton.disabled = true;
     this.clearButton.disabled = true;
+    
+    // Reset the pulse animation
+    this.spinButton.style.animation = 'none';
     
     // Display "Spinning..." message
     this.resultDisplay.textContent = 'Spinning...';
@@ -493,6 +697,10 @@ export class RouletteGame {
     // Highlight the winning number on the wheel
     this.highlightWinningNumber(number);
     
+    // Calculate total bet amount for loss tracking
+    const totalBetAmount = Object.values(this.currentBet).reduce((sum, bet) => sum + bet, 0);
+    console.log('Total bet amount:', totalBetAmount);
+    
     let winnings = 0;
     let winningBets = [];
     
@@ -518,20 +726,56 @@ export class RouletteGame {
       }
     }
     
-    // Process the result
+    console.log('Winnings calculated:', winnings);
+    
+    // Prepare the game details
+    const gameDetails = {
+      gameType: 'roulette',
+      winNumber: number,
+      winColor: color,
+      winningBets: winningBets,
+      totalBetAmount: totalBetAmount
+    };
+    
+    // Process the result with virtual balance
     if (winnings > 0) {
-      this.balance += winnings;
+      // Add winnings to virtual balance
+      this.virtualBalance += winnings;
+      
+      // Save the result for when we close the game
+      this.lastGameResult = {
+        isWin: true,
+        winAmount: winnings,
+        betAmount: totalBetAmount,
+        gameType: 'roulette',
+        details: gameDetails
+      };
+      
       this.resultDisplay.textContent = `${number} ${color.toUpperCase()} - You won $${winnings}!`;
       this.resultDisplay.style.color = '#4CAF50';
     } else {
+      // All bets are already deducted from virtual balance during betting
+      // Just need to save the result for when we close the game
+      this.lastGameResult = {
+        isWin: false,
+        winAmount: 0,
+        betAmount: totalBetAmount,
+        gameType: 'roulette',
+        details: gameDetails
+      };
+      
       this.resultDisplay.textContent = `${number} ${color.toUpperCase()} - You lost!`;
       this.resultDisplay.style.color = '#ff6b6b';
     }
     
+    console.log('Game result prepared:', this.lastGameResult);
+    console.log('Virtual balance after result:', this.virtualBalance);
     this.updateBalanceDisplay();
     
     // Clear bets
     this.currentBet = {};
+    this.pendingBets = [];
+    
     this.betNumbers.forEach(number => {
       number.textContent = number.dataset.number;
       number.classList.remove('active-bet');
@@ -546,8 +790,10 @@ export class RouletteGame {
     // Update user balance in session storage
     const user = getCurrentUser();
     if (user) {
-      user.balance = this.balance;
+      // Use virtualBalance to reflect current game state
+      user.balance = this.virtualBalance;
       sessionStorage.setItem('current_user', JSON.stringify(user));
+      console.log('Updated session storage balance to:', this.virtualBalance);
     }
   }
   
@@ -577,8 +823,11 @@ export class RouletteGame {
     const betType = optionElement.dataset.bet;
     const amount = this.selectedChip;
     
-    // Ensure we have enough balance
-    if (amount > this.balance) {
+    console.log('Placing bet on option:', betType, 'amount:', amount);
+    console.log('Current virtual balance:', this.virtualBalance);
+    
+    // Ensure we have enough virtual balance
+    if (amount > this.virtualBalance) {
       this.resultDisplay.textContent = 'Insufficient balance!';
       this.resultDisplay.style.color = '#ff6b6b';
       return;
@@ -592,9 +841,27 @@ export class RouletteGame {
     // Add the bet amount
     this.currentBet[betType] += amount;
     
-    // Deduct from balance
-    this.balance -= amount;
+    // Deduct from virtual balance only
+    this.virtualBalance -= amount;
+    console.log('New virtual balance after bet:', this.virtualBalance);
+    
+    // Save bet information for later processing
+    this.pendingBets.push({
+      type: 'option',
+      betType: betType,
+      description: BET_TYPES[betType]?.description || betType,
+      amount: amount
+    });
+    
+    // Update the virtual balance display
     this.updateBalanceDisplay();
+    
+    // Show prompt to spin the wheel
+    this.resultDisplay.textContent = 'Bet placed! Press SPIN to play.';
+    this.resultDisplay.style.color = '#e0c78c';
+    
+    // Highlight the spin button
+    this.spinButton.style.animation = 'pulse 1.5s infinite';
     
     // Update the display
     optionElement.classList.add('active-bet');
@@ -613,22 +880,82 @@ export function initRouletteGame() {
   if (liveCasinoButton && rouletteModal) {
     liveCasinoButton.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('Roulette game opening');
       rouletteModal.style.display = 'block';
       
       // Initialize game if not already created
       if (!rouletteGame) {
+        console.log('Creating new roulette game instance');
         rouletteGame = new RouletteGame();
+      } else {
+        console.log('Using existing roulette game instance');
+        // Refresh the balance from server
+        rouletteGame.fetchCurrentBalance().then(() => {
+          rouletteGame.updateBalanceDisplay();
+          console.log('Balance refreshed on game open:', rouletteGame.balance);
+        });
       }
     });
     
-    closeButton.addEventListener('click', () => {
+    // Direct call to balance handler for immediate updates
+    function updateGameBalanceOnClose() {
+      console.log('Roulette game closing');
+      if (rouletteGame) {
+        const balanceDiff = rouletteGame.virtualBalance - rouletteGame.balance;
+        console.log('Balance difference on close:', balanceDiff);
+        
+        if (balanceDiff !== 0) {
+          console.log('Updating balance on close, difference:', balanceDiff);
+          
+          // Direct balance update to server
+          fetch('http://localhost:3000/api/updateBalance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: rouletteGame.balanceHandler.username,
+              balance: rouletteGame.virtualBalance,
+              source: 'roulette-game-close'
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Balance updated on server:', data);
+            
+            // Update local balance handler
+            rouletteGame.balance = rouletteGame.virtualBalance;
+            
+            // Update balance handler's internal balance
+            rouletteGame.balanceHandler.balance = rouletteGame.virtualBalance;
+            
+            // Update user in session storage
+            const user = getCurrentUser();
+            if (user) {
+              user.balance = rouletteGame.virtualBalance;
+              sessionStorage.setItem('current_user', JSON.stringify(user));
+              console.log('Updated session storage balance on close to:', rouletteGame.virtualBalance);
+            }
+            
+            // Dispatch balance updated event
+            const event = new CustomEvent('balanceUpdated', {
+              detail: { balance: rouletteGame.virtualBalance }
+            });
+            window.dispatchEvent(event);
+          })
+          .catch(err => {
+            console.error('Error updating balance on close:', err);
+          });
+        }
+      }
+      
       rouletteModal.style.display = 'none';
-    });
+    }
+    
+    closeButton.addEventListener('click', updateGameBalanceOnClose);
     
     // Close on clicking outside
     rouletteModal.addEventListener('click', (e) => {
       if (e.target === rouletteModal) {
-        rouletteModal.style.display = 'none';
+        updateGameBalanceOnClose();
       }
     });
   }

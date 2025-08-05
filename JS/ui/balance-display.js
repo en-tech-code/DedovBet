@@ -11,84 +11,113 @@ export class BalanceDisplay {
     this.accountDropdown = document.getElementById('account-dropdown');
     this.initializeUI();
     this.setupEventListeners();
+    this.observeDropdown();
+    
+    // Listen for balance update events
+    window.addEventListener('balanceUpdated', (e) => {
+      this.updateBalanceDisplay(e.detail.balance);
+    });
+    
+    // Listen for dropdown update event
+    window.addEventListener('accountDropdownUpdated', () => {
+      this.accountDropdown = document.getElementById('account-dropdown');
+      this.initializeUI();
+    });
+  }
+  /**
+   * Observe the account dropdown for visibility changes and re-initialize UI
+   */
+  observeDropdown() {
+    if (!this.accountDropdown) return;
+    // Observe style changes to detect when dropdown is shown
+    const observer = new MutationObserver(() => {
+      if (this.accountDropdown.style.display !== 'none') {
+        this.initializeUI();
+      }
+    });
+    observer.observe(this.accountDropdown, { attributes: true, attributeFilter: ['style'] });
   }
   
   /**
    * Initialize the UI elements
    */
-  initializeUI() {
+  async initializeUI() {
     // Only proceed if the user is logged in
     if (!this.balanceHandler.username) return;
-    
-    // Add balance actions to account dropdown if it exists
+
+    // First refresh the balance from server
+    await this.refreshBalance();
+
+    // Add or update balance actions in account dropdown
     if (this.accountDropdown) {
-      // Create balance actions container if it doesn't exist
-      if (!document.getElementById('balance-actions')) {
-        const actionsContainer = document.createElement('div');
-        actionsContainer.id = 'balance-actions';
-        actionsContainer.className = 'balance-actions';
-        actionsContainer.style.marginTop = '10px';
-        actionsContainer.style.display = 'flex';
-        actionsContainer.style.gap = '5px';
-        
-        // Create action buttons
-        const depositBtn = document.createElement('button');
-        depositBtn.id = 'deposit-btn';
-        depositBtn.className = 'balance-action-btn';
-        depositBtn.textContent = 'Deposit';
-        depositBtn.style.background = '#4CAF50';
-        depositBtn.style.color = 'white';
-        depositBtn.style.border = 'none';
-        depositBtn.style.padding = '5px 10px';
-        depositBtn.style.cursor = 'pointer';
-        depositBtn.style.flex = '1';
-        
-        const withdrawBtn = document.createElement('button');
-        withdrawBtn.id = 'withdraw-btn';
-        withdrawBtn.className = 'balance-action-btn';
-        withdrawBtn.textContent = 'Withdraw';
-        withdrawBtn.style.background = '#ff9800';
-        withdrawBtn.style.color = 'white';
-        withdrawBtn.style.border = 'none';
-        withdrawBtn.style.padding = '5px 10px';
-        withdrawBtn.style.cursor = 'pointer';
-        withdrawBtn.style.flex = '1';
-        
-        const historyBtn = document.createElement('button');
-        historyBtn.id = 'history-btn';
-        historyBtn.className = 'balance-action-btn';
-        historyBtn.textContent = 'History';
-        historyBtn.style.background = '#2196F3';
-        historyBtn.style.color = 'white';
-        historyBtn.style.border = 'none';
-        historyBtn.style.padding = '5px 10px';
-        historyBtn.style.cursor = 'pointer';
-        historyBtn.style.flex = '1';
-        
-        const refreshBtn = document.createElement('button');
-        refreshBtn.id = 'refresh-balance-btn';
-        refreshBtn.className = 'balance-action-btn';
-        refreshBtn.innerHTML = '&#x21bb;'; // Refresh icon
-        refreshBtn.style.background = '#607D8B';
-        refreshBtn.style.color = 'white';
-        refreshBtn.style.border = 'none';
-        refreshBtn.style.padding = '5px';
-        refreshBtn.style.cursor = 'pointer';
-        refreshBtn.style.width = '30px';
-        
-        // Add buttons to container
-        actionsContainer.appendChild(depositBtn);
-        actionsContainer.appendChild(withdrawBtn);
-        actionsContainer.appendChild(historyBtn);
-        actionsContainer.appendChild(refreshBtn);
-        
-        // Insert before logout button
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-          this.accountDropdown.insertBefore(actionsContainer, logoutBtn);
-        } else {
-          this.accountDropdown.appendChild(actionsContainer);
-        }
+      // Remove old actions if present (prevents duplicates)
+      const oldActions = document.getElementById('balance-actions');
+      if (oldActions) oldActions.remove();
+
+      const actionsContainer = document.createElement('div');
+      actionsContainer.id = 'balance-actions';
+      actionsContainer.className = 'balance-actions';
+      actionsContainer.style.marginTop = '10px';
+      actionsContainer.style.display = 'flex';
+      actionsContainer.style.gap = '5px';
+
+      // Create action buttons
+      const depositBtn = document.createElement('button');
+      depositBtn.id = 'deposit-btn';
+      depositBtn.className = 'balance-action-btn';
+      depositBtn.textContent = 'Deposit';
+      depositBtn.style.background = '#4CAF50';
+      depositBtn.style.color = 'white';
+      depositBtn.style.border = 'none';
+      depositBtn.style.padding = '5px 10px';
+      depositBtn.style.cursor = 'pointer';
+      depositBtn.style.flex = '1';
+
+      const withdrawBtn = document.createElement('button');
+      withdrawBtn.id = 'withdraw-btn';
+      withdrawBtn.className = 'balance-action-btn';
+      withdrawBtn.textContent = 'Withdraw';
+      withdrawBtn.style.background = '#ff9800';
+      withdrawBtn.style.color = 'white';
+      withdrawBtn.style.border = 'none';
+      withdrawBtn.style.padding = '5px 10px';
+      withdrawBtn.style.cursor = 'pointer';
+      withdrawBtn.style.flex = '1';
+
+      const historyBtn = document.createElement('button');
+      historyBtn.id = 'history-btn';
+      historyBtn.className = 'balance-action-btn';
+      historyBtn.textContent = 'History';
+      historyBtn.style.background = '#2196F3';
+      historyBtn.style.color = 'white';
+      historyBtn.style.border = 'none';
+      historyBtn.style.padding = '5px 10px';
+      historyBtn.style.cursor = 'pointer';
+      historyBtn.style.flex = '1';
+
+      const refreshBtn = document.createElement('button');
+      refreshBtn.id = 'refresh-balance-btn';
+      refreshBtn.className = 'balance-action-btn';
+      refreshBtn.innerHTML = '&#x21bb;'; // Refresh icon
+      refreshBtn.style.background = '#607D8B';
+      refreshBtn.style.color = 'white';
+      refreshBtn.style.border = 'none';
+      refreshBtn.style.padding = '5px';
+      refreshBtn.style.cursor = 'pointer';
+      refreshBtn.style.width = '30px';
+
+      // Add buttons to container
+      actionsContainer.appendChild(depositBtn);
+      actionsContainer.appendChild(withdrawBtn);
+      actionsContainer.appendChild(historyBtn);
+      actionsContainer.appendChild(refreshBtn);
+
+      // Insert before logout button
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        this.accountDropdown.insertBefore(actionsContainer, logoutBtn);
+      } else {
+        this.accountDropdown.appendChild(actionsContainer);
       }
     }
     
@@ -112,7 +141,7 @@ export class BalanceDisplay {
     modal.style.display = 'none';
     
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-content" style="max-width: 350px;">
         <div class="modal-header">
           <h2 id="transaction-title">Deposit</h2>
           <span class="modal-close" id="close-transaction">✕</span>
@@ -120,27 +149,24 @@ export class BalanceDisplay {
         <div class="modal-body">
           <div class="form-content">
             <label for="transaction-amount">Amount:</label>
-            <input type="number" id="transaction-amount" min="1" step="1" value="100">
-            
-            <label for="transaction-method">Payment Method:</label>
-            <select id="transaction-method">
-              <option value="credit_card">Credit Card</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="e_wallet">E-Wallet</option>
-              <option value="crypto">Cryptocurrency</option>
-            </select>
-            
+            <input type="number" id="transaction-amount" min="10" max="500" step="1" value="100" style="width: 100%; font-size: 1.2em; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; padding: 8px 12px; background: #181818; color: #fff;">
+            <div style="font-size: 0.95em; color: #4CAF50; margin-bottom: 8px;">Demo deposit: min $10, max $500</div>
             <div id="transaction-error" style="color: red; margin-top: 10px;"></div>
             <div id="transaction-success" style="color: green; margin-top: 10px;"></div>
-            
             <div class="form-buttons">
-              <button id="submit-transaction" style="background: #4CAF50; color: white;">Submit</button>
+              <button id="submit-transaction" style="background: #2196F3; color: white;">Submit</button>
               <button id="cancel-transaction" style="background: #f44336; color: white; margin-left: 10px;">Cancel</button>
             </div>
           </div>
         </div>
       </div>
     `;
+    // Remove scroll/stepper for input type=number
+    const amountInput = modal.querySelector('#transaction-amount');
+    amountInput.addEventListener('wheel', (e) => e.preventDefault());
+    amountInput.addEventListener('keydown', (e) => {
+      if (["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+    });
     
     document.body.appendChild(modal);
   }
@@ -158,27 +184,34 @@ export class BalanceDisplay {
     modal.style.display = 'none';
     
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-content" style="max-width: 600px;">
         <div class="modal-header">
           <h2>Transaction History</h2>
           <span class="modal-close" id="close-history">✕</span>
         </div>
         <div class="modal-body">
-          <div class="history-filters" style="margin-bottom: 15px; display: flex; gap: 10px;">
-            <select id="history-type-filter">
-              <option value="">All Transactions</option>
-              <option value="deposit">Deposits</option>
-              <option value="withdrawal">Withdrawals</option>
-              <option value="bet">Bets</option>
-              <option value="win">Wins</option>
-            </select>
-            
-            <input type="date" id="history-date-from" placeholder="From Date">
-            <input type="date" id="history-date-to" placeholder="To Date">
-            
-            <button id="apply-history-filters" style="background: #2196F3; color: white;">Apply Filters</button>
+          <div class="history-filters" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 10px; align-items: center; margin-right: 20px;">
+              <label for="history-category" style="white-space: nowrap;">Type:</label>
+              <select id="history-category" style="min-width: 120px;">
+                <option value="all">All Transactions</option>
+                <option value="account">Account Only</option>
+                <option value="game">Game Only</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <label for="history-date-range" style="white-space: nowrap;">Period:</label>
+              <select id="history-date-range" style="min-width: 120px;">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7days">Last 7 Days</option>
+                <option value="month">Last Month</option>
+                <option value="date">Specific Date</option>
+              </select>
+              <input type="date" id="history-specific-date" style="display:none;">
+              <button id="apply-history-filters" style="background: #2196F3; color: white;">Apply</button>
+            </div>
           </div>
-          
           <div id="history-container" style="max-height: 400px; overflow-y: auto;">
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
@@ -198,6 +231,14 @@ export class BalanceDisplay {
         </div>
       </div>
     `;
+    // Show/hide date input based on dropdown
+    const rangeSelect = modal.querySelector('#history-date-range');
+    const dateInput = modal.querySelector('#history-specific-date');
+    rangeSelect.addEventListener('change', () => {
+      dateInput.style.display = rangeSelect.value === 'date' ? '' : 'none';
+    });
+    // Set default date to today
+    dateInput.value = new Date().toISOString().slice(0, 10);
     
     document.body.appendChild(modal);
   }
@@ -226,6 +267,16 @@ export class BalanceDisplay {
       this.balanceHandler.balance = 0;
       this.updateBalanceDisplay();
       this.initializeUI();
+    });
+    
+    // Listen for balance update events
+    window.addEventListener('balanceUpdated', (e) => {
+      console.log('Balance updated event received:', e.detail);
+      // Update local handler balance to match event data
+      if (e.detail.username === this.balanceHandler.username) {
+        this.balanceHandler.balance = e.detail.balance;
+        this.updateBalanceDisplay();
+      }
     });
   }
   
@@ -276,10 +327,15 @@ export class BalanceDisplay {
   
   /**
    * Update the balance display
+   * @param {number} balance - Optional balance to display
    */
-  updateBalanceDisplay() {
+  updateBalanceDisplay(balance) {
     if (this.balanceElement) {
-      this.balanceElement.textContent = this.balanceHandler.getFormattedBalance();
+      if (balance !== undefined) {
+        this.balanceElement.textContent = `$${balance.toFixed(2)}`;
+      } else {
+        this.balanceElement.textContent = this.balanceHandler.getFormattedBalance();
+      }
     }
   }
   
@@ -313,10 +369,24 @@ export class BalanceDisplay {
         // Update display
         this.updateBalanceDisplay();
         
-        // Show toast notification
-        this.showToast('Balance refreshed!', 'success');
+        console.log('Balance refreshed from server:', data.balance);
+        
+        // Show toast notification if it exists
+        if (typeof this.showToast === 'function') {
+          this.showToast('Balance refreshed!', 'success');
+        }
+        
+        return data.balance;
       } else {
-        this.showToast('Failed to refresh balance', 'error');
+        console.error('Failed to refresh balance:', data.message);
+        
+        // Show toast notification if it exists
+        if (typeof this.showToast === 'function') {
+          this.showToast('Failed to refresh balance', 'error');
+        }
+        
+        this.updateBalanceDisplay(); // Fallback to current balance
+        return null;
       }
     } catch(error) {
       console.error('Error refreshing balance:', error);
@@ -381,39 +451,32 @@ export class BalanceDisplay {
   async processTransaction() {
     const modal = document.getElementById('transaction-modal');
     if (!modal) return;
-    
-    const type = modal.dataset.type;
+    const type = document.getElementById('transaction-title').textContent.toLowerCase();
     const amountInput = document.getElementById('transaction-amount');
-    const methodSelect = document.getElementById('transaction-method');
     const errorDiv = document.getElementById('transaction-error');
     const successDiv = document.getElementById('transaction-success');
-    
     errorDiv.textContent = '';
     successDiv.textContent = '';
-    
-    // Validate amount
     const amount = parseFloat(amountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-      errorDiv.textContent = 'Please enter a valid amount';
+    if (isNaN(amount) || amount < 10 || amount > 500) {
+      errorDiv.textContent = 'Amount must be between $10 and $500.';
+      amountInput.focus();
       return;
     }
-    
-    // Process based on type
     try {
       let result;
-      
       if (type === 'deposit') {
-        result = await this.balanceHandler.deposit(amount, methodSelect.value);
+        result = await this.balanceHandler.deposit(amount, 'demo');
       } else {
-        result = await this.balanceHandler.withdraw(amount, methodSelect.value);
+        result = await this.balanceHandler.withdraw(amount, 'credit_card');
       }
-      
       if (result.success) {
         successDiv.textContent = `${type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`;
         this.updateBalanceDisplay();
-        
-        // Show toast notification
         this.showToast(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} of ${amount.toFixed(2)} successful!`, 'success');
+        
+        // Reload transaction history to ensure it's up to date
+        await this.balanceHandler.loadTransactionHistory();
         
         // Close modal after a delay
         setTimeout(() => this.hideTransactionModal(), 2000);
@@ -427,19 +490,63 @@ export class BalanceDisplay {
   }
   
   /**
+   * Add a test transaction to the system
+   */
+  async addTestTransaction() {
+    if (!this.balanceHandler.username) {
+      console.log("Cannot add test transaction: No user logged in");
+      return;
+    }
+    
+    console.log("Adding test transaction for debugging");
+    
+    // Create a test deposit transaction
+    await this.balanceHandler.deposit(100, 'test_method');
+    
+    // Create a test game transaction
+    await this.balanceHandler.placeBet(10, 'roulette', { betType: 'red' });
+    
+    // Create a test win transaction
+    await this.balanceHandler.processGameResult({
+      isWin: true,
+      winAmount: 20,
+      gameType: 'roulette',
+      details: { winNumber: 32, winColor: 'red' }
+    });
+    
+    // Show success toast
+    this.showToast('Test transactions added!', 'success');
+  }
+  
+  /**
    * Show history modal and load transactions
    */
   async showHistoryModal() {
     const modal = document.getElementById('history-modal');
     if (!modal) return;
     
-    // Load latest transactions
-    await this.balanceHandler.loadTransactionHistory();
-    
-    // Display transactions
-    this.displayTransactions();
+    // Show loading state
+    const tableBody = document.getElementById('history-table-body');
+    if (tableBody) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 20px;">
+            <div>Loading transactions...</div>
+          </td>
+        </tr>
+      `;
+    }
     
     modal.style.display = 'flex';
+    
+    // Load latest transactions
+    const loaded = await this.balanceHandler.loadTransactionHistory();
+    console.log("Transaction loading result:", loaded);
+    console.log("Transactions:", this.balanceHandler.transactions);
+    
+    // Display transactions regardless of whether they exist or not
+    // The displayTransactions method will handle the empty case
+    this.displayTransactions();
   }
   
   /**
@@ -456,22 +563,45 @@ export class BalanceDisplay {
    * Apply filters to transaction history
    */
   applyHistoryFilters() {
-    const typeFilter = document.getElementById('history-type-filter').value;
-    const dateFrom = document.getElementById('history-date-from').value;
-    const dateTo = document.getElementById('history-date-to').value;
+    console.log("Applying history filters");
     
-    const filters = {};
+    // Get selected category
+    const category = document.getElementById('history-category')?.value;
+    console.log("Selected category:", category);
     
-    if (typeFilter) {
-      filters.type = typeFilter;
+    // Get selected date range
+    const range = document.getElementById('history-date-range')?.value;
+    const dateInput = document.getElementById('history-specific-date');
+    let dateFrom = null, dateTo = null;
+    const today = new Date();
+    if (range === 'today') {
+      const todayStr = today.toISOString().slice(0, 10);
+      dateFrom = dateTo = todayStr;
+    } else if (range === 'yesterday') {
+      const yest = new Date(today);
+      yest.setDate(today.getDate() - 1);
+      const yestStr = yest.toISOString().slice(0, 10);
+      dateFrom = dateTo = yestStr;
+    } else if (range === '7days') {
+      dateTo = today.toISOString().slice(0, 10);
+      const d = new Date(today);
+      d.setDate(d.getDate() - 6);
+      dateFrom = d.toISOString().slice(0, 10);
+    } else if (range === 'month') {
+      dateTo = today.toISOString().slice(0, 10);
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - 1);
+      dateFrom = d.toISOString().slice(0, 10);
+    } else if (range === 'date' && dateInput.value) {
+      dateFrom = dateTo = dateInput.value;
     }
     
-    if (dateFrom) {
-      filters.dateFrom = dateFrom;
-    }
+    // Build the filters object
+    const filters = { dateFrom, dateTo };
     
-    if (dateTo) {
-      filters.dateTo = dateTo;
+    // Add category filter if not set to 'all'
+    if (category && category !== 'all') {
+      filters.category = category;
     }
     
     this.displayTransactions(filters);
@@ -489,8 +619,10 @@ export class BalanceDisplay {
     
     // Get filtered transactions
     const transactions = this.balanceHandler.getTransactionHistory(filters);
+    console.log('Displaying transactions with filters:', filters);
+    console.log('Transactions to display:', transactions);
     
-    if (transactions.length === 0) {
+    if (!transactions || transactions.length === 0) {
       tableBody.innerHTML = `
         <tr>
           <td colspan="5" style="text-align: center; padding: 20px;">
@@ -510,18 +642,29 @@ export class BalanceDisplay {
       const date = new Date(transaction.timestamp);
       const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
       
-      // Format type
+      // Format type based on category and type
       let typeText = transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1);
       let typeColor = '#333';
+      let categoryBadge = '';
       
+      // Determine colors and format type text based on transaction type
       if (transaction.type === 'deposit') {
         typeColor = '#4CAF50';
+        typeText = 'Deposit';
       } else if (transaction.type === 'withdrawal') {
         typeColor = '#ff9800';
+        typeText = 'Withdrawal';
       } else if (transaction.type === 'bet') {
         typeColor = '#f44336';
+        typeText = 'Bet';
       } else if (transaction.type === 'win') {
         typeColor = '#2196F3';
+        typeText = 'Win';
+      }
+      
+      // Add category badge
+      if (transaction.category === 'game') {
+        categoryBadge = '<span style="font-size: 0.8em; background: #2c2c2c; color: #aaa; padding: 2px 4px; border-radius: 3px; margin-left: 5px;">GAME</span>';
       }
       
       // Format amount
@@ -529,35 +672,42 @@ export class BalanceDisplay {
       const formattedAmount = `${amount >= 0 ? '+' : ''}${amount.toFixed(2)}`;
       const amountColor = amount >= 0 ? '#4CAF50' : '#f44336';
       
-      // Format details
+      // Format details based on transaction category
       let details = '';
       
-      if (transaction.method) {
-        details += `Method: ${transaction.method.replace('_', ' ')}<br>`;
-      }
-      
-      if (transaction.gameType) {
-        details += `Game: ${transaction.gameType.charAt(0).toUpperCase() + transaction.gameType.slice(1)}<br>`;
-      }
-      
-      if (transaction.details) {
-        if (transaction.details.symbols) {
-          details += `Symbols: ${transaction.details.symbols.join(', ')}<br>`;
+      if (transaction.category === 'account') {
+        // Account transaction details
+        if (transaction.method) {
+          details += `Payment method: ${transaction.method.replace('_', ' ')}<br>`;
+        }
+        if (transaction.transactionId) {
+          details += `ID: ${transaction.transactionId}<br>`;
+        }
+      } else if (transaction.category === 'game') {
+        // Game transaction details
+        if (transaction.gameType) {
+          details += `Game: ${transaction.gameType.charAt(0).toUpperCase() + transaction.gameType.slice(1)}<br>`;
         }
         
-        if (transaction.details.lines) {
-          details += `Lines: ${transaction.details.lines}<br>`;
-        }
-        
-        if (transaction.details.multiplier) {
-          details += `Multiplier: ${transaction.details.multiplier}x<br>`;
+        if (transaction.details) {
+          if (transaction.details.symbols) {
+            details += `Symbols: ${transaction.details.symbols.join(', ')}<br>`;
+          }
+          
+          if (transaction.details.lines) {
+            details += `Lines: ${transaction.details.lines}<br>`;
+          }
+          
+          if (transaction.details.multiplier) {
+            details += `Multiplier: ${transaction.details.multiplier}x<br>`;
+          }
         }
       }
       
       // Create cells
       row.innerHTML = `
         <td style="padding: 8px;">${formattedDate}</td>
-        <td style="padding: 8px; color: ${typeColor};">${typeText}</td>
+        <td style="padding: 8px; color: ${typeColor};">${typeText}${categoryBadge}</td>
         <td style="padding: 8px; text-align: right; color: ${amountColor};">${formattedAmount}</td>
         <td style="padding: 8px; text-align: right;">${transaction.balance.toFixed(2)}</td>
         <td style="padding: 8px;">${details}</td>
