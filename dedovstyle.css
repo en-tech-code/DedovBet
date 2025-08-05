@@ -1304,3 +1304,32 @@ progress::-moz-progress-bar {
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
+#transaction-amount {
+  width: 100%;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  background: #181818;
+  color: #fff;
+  outline: none;
+  box-shadow: none;
+  appearance: textfield;
+}
+#transaction-amount:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 12px #2196F355;
+  background: #232b2b;
+}
+/* Remove number input arrows for Chrome, Safari, Edge */
+#transaction-amount::-webkit-outer-spin-button,
+#transaction-amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Remove number input arrows for Firefox */
+#transaction-amount[type=number] {
+  -moz-appearance: textfield;
+}

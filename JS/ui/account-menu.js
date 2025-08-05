@@ -15,9 +15,13 @@ export function updateAccountMenu() {
     const displayName = user.name ? user.name : user.username;
     document.getElementById('account-username').textContent = displayName;
     document.getElementById('account-balance').textContent = `$${user.balance.toFixed(2)}`;
+    // Notify balance-display to re-inject buttons
+    window.dispatchEvent(new CustomEvent('accountDropdownUpdated'));
   } else {
     authContainer.style.display = 'flex';
     accountMenu.style.display = 'none';
+    // Notify balance-display to clean up
+    window.dispatchEvent(new CustomEvent('accountDropdownUpdated'));
   }
 }
 

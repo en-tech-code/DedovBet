@@ -141,21 +141,24 @@ export class BalanceDisplay {
     modal.style.display = 'none';
     
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 350px;">
-        <div class="modal-header">
-          <h2 id="transaction-title">Deposit</h2>
+      <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-header" style="background: linear-gradient(to right, #2c3e50, #4a5568);">
+          <h2 id="transaction-title" style="margin: 0; font-size: 1.4em;">Deposit</h2>
           <span class="modal-close" id="close-transaction">✕</span>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding: 16px;">
           <div class="form-content">
-            <label for="transaction-amount">Amount:</label>
-            <input type="number" id="transaction-amount" min="10" max="500" step="1" value="100" style="width: 100%; font-size: 1.2em; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; padding: 8px 12px; background: #181818; color: #fff;">
-            <div style="font-size: 0.95em; color: #4CAF50; margin-bottom: 8px;">Demo deposit: min $10, max $500</div>
-            <div id="transaction-error" style="color: red; margin-top: 10px;"></div>
-            <div id="transaction-success" style="color: green; margin-top: 10px;"></div>
-            <div class="form-buttons">
-              <button id="submit-transaction" style="background: #2196F3; color: white;">Submit</button>
-              <button id="cancel-transaction" style="background: #f44336; color: white; margin-left: 10px;">Cancel</button>
+            <label for="transaction-amount" style="display: block; margin-bottom: 6px; font-weight: bold; color: #e0c78c;">Amount:</label>
+            <input type="number" id="transaction-amount" min="10" max="9999" step="1" value="100" 
+              style="width: 100%; font-size: 1.2em; margin-bottom: 10px; border-radius: 4px; 
+              border: 2px solid #3d4852; padding: 8px 12px; background: #1a202c; color: #fff; 
+              box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);">
+            <div id="limit-info" style="font-size: 0.9em; color: #4CAF50; margin-bottom: 8px;">Demo deposit: min $10, max $9999</div>
+            <div id="transaction-error" style="color: #ff6b6b; margin-top: 8px; font-size: 0.9em;"></div>
+            <div id="transaction-success" style="color: #4CAF50; margin-top: 8px; font-size: 0.9em; font-weight: bold;"></div>
+            <div class="form-buttons" style="display: flex; gap: 10px; margin-top: 16px;">
+              <button id="submit-transaction" style="flex: 2; background: linear-gradient(to bottom, #4CAF50, #3d8b40); color: white; padding: 10px 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">Submit</button>
+              <button id="cancel-transaction" style="flex: 1; background: linear-gradient(to bottom, #f44336, #d32f2f); color: white; padding: 10px 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">Cancel</button>
             </div>
           </div>
         </div>
@@ -407,9 +410,10 @@ export class BalanceDisplay {
     const errorDiv = document.getElementById('transaction-error');
     const successDiv = document.getElementById('transaction-success');
     const amountInput = document.getElementById('transaction-amount');
+    const limitInfo = document.getElementById('limit-info');
     
     // Only proceed if all required elements exist
-    if (!title || !submitBtn || !errorDiv || !successDiv || !amountInput) {
+    if (!title || !submitBtn || !errorDiv || !successDiv || !amountInput || !limitInfo) {
       console.error('Missing modal elements');
       return;
     }
@@ -422,13 +426,23 @@ export class BalanceDisplay {
     // Set up for deposit or withdraw
     if (type === 'deposit') {
       title.textContent = 'Deposit';
+      title.style.color = '#4CAF50';
       submitBtn.textContent = 'Deposit Funds';
-      submitBtn.style.background = '#4CAF50';
+      submitBtn.style.background = 'linear-gradient(to bottom, #4CAF50, #3d8b40)';
+      limitInfo.textContent = 'Demo deposit: min $10, max $9999';
+      limitInfo.style.color = '#4CAF50';
+      amountInput.min = '10';
+      amountInput.max = '9999';
       modal.dataset.type = 'deposit';
     } else {
       title.textContent = 'Withdraw';
+      title.style.color = '#ff9800';
       submitBtn.textContent = 'Withdraw Funds';
-      submitBtn.style.background = '#ff9800';
+      submitBtn.style.background = 'linear-gradient(to bottom, #ff9800, #f57c00)';
+      limitInfo.textContent = 'Withdrawal: min $25, max $5000';
+      limitInfo.style.color = '#ff9800';
+      amountInput.min = '25';
+      amountInput.max = '5000';
       modal.dataset.type = 'withdraw';
     }
     
@@ -451,18 +465,39 @@ export class BalanceDisplay {
   async processTransaction() {
     const modal = document.getElementById('transaction-modal');
     if (!modal) return;
-    const type = document.getElementById('transaction-title').textContent.toLowerCase();
+    
+    const type = modal.dataset.type || 'deposit';
     const amountInput = document.getElementById('transaction-amount');
     const errorDiv = document.getElementById('transaction-error');
     const successDiv = document.getElementById('transaction-success');
+    
     errorDiv.textContent = '';
     successDiv.textContent = '';
+    
     const amount = parseFloat(amountInput.value);
-    if (isNaN(amount) || amount < 10 || amount > 500) {
-      errorDiv.textContent = 'Amount must be between $10 and $500.';
-      amountInput.focus();
-      return;
+    
+    // Validate amount based on transaction type
+    if (type === 'deposit') {
+      if (isNaN(amount) || amount < 10 || amount > 9999) {
+        errorDiv.textContent = 'Amount must be between $10 and $9,999.';
+        amountInput.focus();
+        return;
+      }
+    } else { // withdraw
+      if (isNaN(amount) || amount < 25 || amount > 5000) {
+        errorDiv.textContent = 'Amount must be between $25 and $5,000.';
+        amountInput.focus();
+        return;
+      }
+      
+      // Check if user has sufficient balance
+      if (amount > this.balanceHandler.balance) {
+        errorDiv.textContent = 'Insufficient balance for this withdrawal.';
+        amountInput.focus();
+        return;
+      }
     }
+    
     try {
       let result;
       if (type === 'deposit') {
@@ -470,16 +505,17 @@ export class BalanceDisplay {
       } else {
         result = await this.balanceHandler.withdraw(amount, 'credit_card');
       }
+      
       if (result.success) {
         successDiv.textContent = `${type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`;
         this.updateBalanceDisplay();
-        this.showToast(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} of ${amount.toFixed(2)} successful!`, 'success');
+        this.showToast(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} of $${amount.toFixed(2)} successful!`, 'success');
         
         // Reload transaction history to ensure it's up to date
         await this.balanceHandler.loadTransactionHistory();
         
         // Close modal after a delay
-        setTimeout(() => this.hideTransactionModal(), 2000);
+        setTimeout(() => this.hideTransactionModal(), 1500);
       } else {
         errorDiv.textContent = result.error || 'Transaction failed';
       }
@@ -539,8 +575,8 @@ export class BalanceDisplay {
     
     modal.style.display = 'flex';
     
-    // Load latest transactions
-    const loaded = await this.balanceHandler.loadTransactionHistory();
+    // Force reload from server - set forceReload=true
+    const loaded = await this.balanceHandler.loadTransactionHistory(true);
     console.log("Transaction loading result:", loaded);
     console.log("Transactions:", this.balanceHandler.transactions);
     

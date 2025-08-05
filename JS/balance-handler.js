@@ -164,10 +164,10 @@ export class BalanceHandler {
       return { success: false, error: 'User not logged in' };
     }
     if (amount < 10) {
-      return { success: false, error: 'Minimum deposit is 10' };
+      return { success: false, error: 'Minimum deposit is $10' };
     }
-    if (amount > 500) {
-      return { success: false, error: 'Maximum deposit is 500' };
+    if (amount > 9999) {
+      return { success: false, error: 'Maximum deposit is $9,999' };
     }
     try {
       // Process deposit
@@ -220,8 +220,11 @@ export class BalanceHandler {
     if (!this.username) {
       return { success: false, error: 'User not logged in' };
     }
-    if (amount <= 0) {
-      return { success: false, error: 'Invalid withdrawal amount' };
+    if (amount < 25) {
+      return { success: false, error: 'Minimum withdrawal is $25' };
+    }
+    if (amount > 5000) {
+      return { success: false, error: 'Maximum withdrawal is $5,000' };
     }
     if (amount > this.balance) {
       return { success: false, error: 'Insufficient balance' };
@@ -314,18 +317,25 @@ export class BalanceHandler {
 
   /**
    * Load transaction history from server
+   * @param {boolean} forceReload - Force reload from server even if transactions are already loaded
    * @returns {Promise<boolean>} Success status
    */
-  async loadTransactionHistory() {
+  async loadTransactionHistory(forceReload = false) {
     if (!this.username) {
       console.log('Cannot load transactions: No username');
       return false;
     }
     
+    // If transactions are already loaded and force reload is not requested, return true
+    if (this.transactions.length > 0 && !forceReload) {
+      console.log('Using cached transactions (length:', this.transactions.length, ')');
+      return true;
+    }
+    
     try {
-      console.log('Loading transactions for user:', this.username);
+      console.log('Loading transactions for user:', this.username, forceReload ? '(forced reload)' : '');
       
-      const response = await fetch(`http://localhost:3000/api/transactions?username=${this.username}`);
+      const response = await fetch(`http://localhost:3000/api/transactions?username=${this.username}&_t=${Date.now()}`);
       if (!response.ok) {
         console.error('Server returned an error:', response.status, response.statusText);
         return false;

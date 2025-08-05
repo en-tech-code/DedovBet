@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Test</title>
+  <link rel="stylesheet" href="dedovstyle.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #121212;
+      color: #fff;
+    }
+    .test-panel {
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      color: #ffcc00;
+    }
+    button {
+      background-color: #ffcc00;
+      color: #000;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e6b800;
+    }
+    input {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background-color: #333;
+      color: #fff;
+    }
+    .transaction-log {
+      margin-top: 20px;
+      border-top: 1px solid #333;
+      padding-top: 10px;
+    }
+    #transaction-results {
+      background-color: #2a2a2a;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Transaction Test Tool</h1>
+  
+  <div class="test-panel">
+    <h2>Account Controls</h2>
+    <div>
+      <button id="login-btn">Login</button>
+      <button id="logout-btn">Logout</button>
+      <button id="check-account-btn">Check Account</button>
+    </div>
+    <div class="transaction-log">
+      <h3>Account Status</h3>
+      <div id="account-status">Not logged in</div>
+    </div>
+  </div>
+  
+  <div class="test-panel">
+    <h2>Banking Transactions</h2>
+    <div>
+      <input type="number" id="amount-input" placeholder="Amount" value="100">
+      <button id="deposit-btn">Make Deposit</button>
+      <button id="withdraw-btn">Make Withdrawal</button>
+    </div>
+    <div>
+      <button id="view-history-btn">View Transaction History</button>
+      <button id="reload-history-btn">Reload Transaction History</button>
+    </div>
+    <div class="transaction-log">
+      <h3>Transaction Results</h3>
+      <div id="transaction-results"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getCurrentUser, loginUser, logoutUser } from './JS/auth/user-accounts.js';
+    import { BalanceHandler, getBalanceHandler } from './JS/balance-handler.js';
+    
+    // Elements
+    const accountStatusEl = document.getElementById('account-status');
+    const resultsEl = document.getElementById('transaction-results');
+    const amountInput = document.getElementById('amount-input');
+    
+    // Initialize balance handler
+    const balanceHandler = getBalanceHandler();
+    
+    // Log helper
+    function log(message, data = null) {
+      const timestamp = new Date().toLocaleTimeString();
+      let logMessage = `[${timestamp}] ${message}`;
+      if (data) {
+        logMessage += '\n' + JSON.stringify(data, null, 2);
+      }
+      resultsEl.textContent = logMessage + '\n\n' + resultsEl.textContent;
+      console.log(message, data);
+    }
+    
+    // Update account status display
+    function updateAccountStatus() {
+      const user = getCurrentUser();
+      if (user) {
+        accountStatusEl.innerHTML = `
+          <strong>Logged in as:</strong> ${user.username}<br>
+          <strong>Balance:</strong> $${user.balance.toFixed(2)}<br>
+          <strong>Transactions:</strong> ${balanceHandler.transactions ? balanceHandler.transactions.length : 0} records
+        `;
+      } else {
+        accountStatusEl.textContent = 'Not logged in';
+      }
+    }
+    
+    // Login
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      try {
+        const result = await loginUser('testov_01', 'Test123!');
+        log('Login attempt', result);
+        updateAccountStatus();
+      } catch (err) {
+        log('Login error', err.message);
+      }
+    });
+    
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logoutUser();
+      log('Logged out');
+      updateAccountStatus();
+    });
+    
+    // Check account
+    document.getElementById('check-account-btn').addEventListener('click', () => {
+      const user = getCurrentUser();
+      log('Current user', user);
+      updateAccountStatus();
+    });
+    
+    // Make deposit
+    document.getElementById('deposit-btn').addEventListener('click', async () => {
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        log('Invalid amount');
+        return;
+      }
+      
+      try {
+        const result = await balanceHandler.deposit(amount, 'test_payment');
+        log('Deposit result', result);
+        updateAccountStatus();
+      } catch (err) {
+        log('Deposit error', err.message);
+      }
+    });
+    
+    // Make withdrawal
+    document.getElementById('withdraw-btn').addEventListener('click', async () => {
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        log('Invalid amount');
+        return;
+      }
+      
+      try {
+        const result = await balanceHandler.withdraw(amount, 'test_payment');
+        log('Withdrawal result', result);
+        updateAccountStatus();
+      } catch (err) {
+        log('Withdrawal error', err.message);
+      }
+    });
+    
+    // View transaction history
+    document.getElementById('view-history-btn').addEventListener('click', async () => {
+      try {
+        const transactions = balanceHandler.getTransactionHistory();
+        log(`Transaction history (${transactions.length} records)`, transactions);
+      } catch (err) {
+        log('Error getting transaction history', err.message);
+      }
+    });
+    
+    // Reload transaction history
+    document.getElementById('reload-history-btn').addEventListener('click', async () => {
+      try {
+        const result = await balanceHandler.loadTransactionHistory();
+        log(`Reload transaction history: ${result ? 'Success' : 'Failed'}`, {
+          count: balanceHandler.transactions.length,
+          transactions: balanceHandler.transactions
+        });
+        updateAccountStatus();
+      } catch (err) {
+        log('Error reloading transaction history', err.message);
+      }
+    });
+    
+    // Initial update
+    updateAccountStatus();
+  </script>
+</body>
+</html>

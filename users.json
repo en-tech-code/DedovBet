@@ -3,13 +3,212 @@
     "username": "testov_01",
     "email": "test@gmail.com",
     "password": "Test123!",
-    "balance": 2716,
+    "balance": 7900,
     "joinedDate": "2025-08-04T00:00:51.281Z",
     "name": "Test",
     "surname": "Testov",
     "dateOfBirth": "2025-02-31",
     "nationality": "Serbian",
     "transactions": [
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -58,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "third-dozen",
+              "amount": 55
+            },
+            {
+              "type": "even",
+              "amount": 3
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T21:04:36.710Z",
+        "balance": 7900
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -58,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "gameClose": true,
+          "reason": "Game closed with balance difference"
+        },
+        "timestamp": "2025-08-05T21:04:39.536Z",
+        "balance": 7900
+      },
+      {
+        "type": "win",
+        "category": "game",
+        "amount": 52,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "beforeUnload": true
+        },
+        "timestamp": "2025-08-05T21:02:03.967Z",
+        "balance": 8010
+      },
+      {
+        "type": "win",
+        "category": "game",
+        "amount": 110,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "winNumber": 25,
+          "winColor": "red",
+          "winningBets": [
+            "Red: $110"
+          ],
+          "totalBetAmount": 58
+        },
+        "timestamp": "2025-08-05T21:02:03.842Z",
+        "balance": 8068
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -58,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "red",
+              "amount": 55
+            },
+            {
+              "type": "even",
+              "amount": 3
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T21:02:03.841Z",
+        "balance": 7900
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -3,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "red",
+              "amount": 3
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T20:52:59.766Z",
+        "balance": 7955
+      },
+      {
+        "type": "win",
+        "category": "game",
+        "amount": 20,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "beforeUnload": true
+        },
+        "timestamp": "2025-08-05T20:52:29.795Z",
+        "balance": 7978
+      },
+      {
+        "type": "win",
+        "category": "game",
+        "amount": 30,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "winNumber": 26,
+          "winColor": "black",
+          "winningBets": [
+            "25-36: $30"
+          ],
+          "totalBetAmount": 10
+        },
+        "timestamp": "2025-08-05T20:52:29.406Z",
+        "balance": 7988
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -10,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "third-dozen",
+              "amount": 10
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T20:52:29.406Z",
+        "balance": 7948
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -1,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "red",
+              "amount": 1
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T20:49:03.907Z",
+        "balance": 7947
+      },
+      {
+        "type": "bet",
+        "category": "game",
+        "amount": -48,
+        "gameType": "roulette",
+        "details": {
+          "gameType": "roulette",
+          "betTypes": [
+            {
+              "type": "red",
+              "amount": 48
+            }
+          ]
+        },
+        "timestamp": "2025-08-05T20:48:39.750Z",
+        "balance": 7900
+      },
+      {
+        "type": "withdrawal",
+        "category": "account",
+        "amount": -2500,
+        "method": "credit_card",
+        "timestamp": "2025-08-05T20:39:31.853Z",
+        "balance": 5216,
+        "transactionId": "wit_1754426371848_954"
+      },
+      {
+        "type": "deposit",
+        "category": "account",
+        "amount": 5000,
+        "method": "demo",
+        "timestamp": "2025-08-05T20:39:21.487Z",
+        "balance": 7716,
+        "transactionId": "dep_1754426361483_878"
+      },
       {
         "type": "withdrawal",
         "category": "account",

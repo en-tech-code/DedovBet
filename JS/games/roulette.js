@@ -701,6 +701,28 @@ export class RouletteGame {
     const totalBetAmount = Object.values(this.currentBet).reduce((sum, bet) => sum + bet, 0);
     console.log('Total bet amount:', totalBetAmount);
     
+    // Record the bet transaction in history - just prepare it for later saving
+    let betTransaction = null;
+    if (totalBetAmount > 0 && this.balanceHandler.username) {
+      betTransaction = {
+        type: 'bet',
+        category: 'game',
+        amount: -totalBetAmount,
+        gameType: 'roulette',
+        details: {
+          gameType: 'roulette',
+          betTypes: Object.keys(this.currentBet).map(type => {
+            return { type, amount: this.currentBet[type] };
+          })
+        },
+        timestamp: new Date().toISOString(),
+        balance: this.balanceHandler.getBalance() - totalBetAmount
+      };
+      
+      // Save the bet transaction when game closes instead of immediately
+      // We'll handle this in updateGameBalanceOnClose
+    }
+    
     let winnings = 0;
     let winningBets = [];
     
@@ -748,8 +770,22 @@ export class RouletteGame {
         winAmount: winnings,
         betAmount: totalBetAmount,
         gameType: 'roulette',
-        details: gameDetails
+        details: gameDetails,
+        betTransaction: betTransaction // Store the bet transaction to save later
       };
+      
+      // Prepare win transaction but don't save it immediately - will save when closing
+      if (this.balanceHandler.username) {
+        this.lastWinTransaction = {
+          type: 'win',
+          category: 'game',
+          amount: winnings,
+          gameType: 'roulette',
+          details: gameDetails,
+          timestamp: new Date().toISOString(),
+          balance: this.balanceHandler.getBalance() + winnings
+        };
+      }
       
       this.resultDisplay.textContent = `${number} ${color.toUpperCase()} - You won $${winnings}!`;
       this.resultDisplay.style.color = '#4CAF50';
@@ -761,7 +797,8 @@ export class RouletteGame {
         winAmount: 0,
         betAmount: totalBetAmount,
         gameType: 'roulette',
-        details: gameDetails
+        details: gameDetails,
+        betTransaction: betTransaction // Store the bet transaction to save later
       };
       
       this.resultDisplay.textContent = `${number} ${color.toUpperCase()} - You lost!`;
@@ -901,11 +938,45 @@ export function initRouletteGame() {
     function updateGameBalanceOnClose() {
       console.log('Roulette game closing');
       if (rouletteGame) {
+        // Save any pending transactions from last game
+        if (rouletteGame.lastGameResult && rouletteGame.lastGameResult.betTransaction) {
+          console.log('Saving pending bet transaction from last game');
+          rouletteGame.balanceHandler.saveTransactionToServer(rouletteGame.lastGameResult.betTransaction);
+        }
+        
+        // Save pending win transaction if exists
+        if (rouletteGame.lastWinTransaction) {
+          console.log('Saving pending win transaction from last game');
+          rouletteGame.balanceHandler.saveTransactionToServer(rouletteGame.lastWinTransaction);
+        }
+        
+        // Check if there's still a balance difference to account for
         const balanceDiff = rouletteGame.virtualBalance - rouletteGame.balance;
         console.log('Balance difference on close:', balanceDiff);
         
         if (balanceDiff !== 0) {
           console.log('Updating balance on close, difference:', balanceDiff);
+          
+          // Record a transaction for the balance change
+          if (rouletteGame.balanceHandler.username) {
+            const isWin = balanceDiff > 0;
+            const closeTransaction = {
+              type: isWin ? 'win' : 'bet',
+              category: 'game',
+              amount: isWin ? balanceDiff : -Math.abs(balanceDiff),
+              gameType: 'roulette',
+              details: {
+                gameType: 'roulette',
+                gameClose: true,
+                reason: 'Game closed with balance difference'
+              },
+              timestamp: new Date().toISOString(),
+              balance: rouletteGame.balanceHandler.getBalance() + (isWin ? balanceDiff : 0)
+            };
+            
+            // Save the final transaction
+            rouletteGame.balanceHandler.saveTransactionToServer(closeTransaction);
+          }
           
           // Direct balance update to server
           fetch('http://localhost:3000/api/updateBalance', {
