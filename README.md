@@ -13,3 +13,12 @@ Fixes to be made :
  - ...
 
 Play within means and have fun!
+
+
+Updates : 
+
+Balance integration complete! 
+ - Demo deposits, withdrawals work
+ - Transaction history (Payments and game history shown)
+ - Balance refreshes and updates the amount after game is finished
+
