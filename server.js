@@ -7,6 +7,7 @@ const USERS_FILE = './users.json';
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static('.'));
 
 // Helper to read users
 function readUsers() {
