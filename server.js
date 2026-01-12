@@ -7,7 +7,30 @@ const USERS_FILE = './users.json';
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('.'));
+
+// Middleware to block access to sensitive files
+app.use((req, res, next) => {
+  const sensitiveFiles = [
+    '/users.json',
+    '/package.json',
+    '/package-lock.json',
+    '/server.js',
+    '/.git',
+    '/.env'
+  ];
+  
+  // Check if requested path matches any sensitive files
+  if (sensitiveFiles.some(file => req.path === file || req.path.startsWith(file))) {
+    return res.status(403).send('Access denied');
+  }
+  next();
+});
+
+// Serve static files with restrictions
+app.use(express.static('.', {
+  dotfiles: 'deny',  // Deny access to dotfiles like .git, .env
+  index: false       // Don't serve directory listings
+}));
 
 // Helper to read users
 function readUsers() {
