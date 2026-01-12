@@ -9,6 +9,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Middleware to block access to sensitive files
+// This protects against the CodeQL warning about serving the current working directory
+// by explicitly denying access to sensitive files before express.static serves them
 app.use((req, res, next) => {
   const sensitiveFiles = [
     '/users.json',
@@ -27,6 +29,10 @@ app.use((req, res, next) => {
 });
 
 // Serve static files with restrictions
+// Safe to serve from current directory because:
+// 1. Middleware above blocks access to all sensitive files
+// 2. dotfiles are denied (blocks .git, .env, etc.)
+// 3. Directory listings are disabled
 app.use(express.static('.', {
   dotfiles: 'deny',  // Deny access to dotfiles like .git, .env
   index: false       // Don't serve directory listings
